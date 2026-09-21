@@ -121,11 +121,11 @@ test('operating systems', function () use ($operatingSystems) {
 
     foreach ($operatingSystems as $ua => $platform) {
         $agent->setUserAgent($ua);
-        expect($agent->platform())->toBe($platform);
-        expect($agent->is($platform))->toBeTrue();
+        expect($agent->platform())->toBe($platform)
+            ->and($agent->is($platform))->toBeTrue();
 
         if (! str_contains($platform, ' ')) {
-            $method = "is{$platform}";
+            $method = "is$platform";
             expect($agent->{$method}())->toBeTrue();
         }
     }
@@ -136,11 +136,11 @@ test('browsers', function () use ($browsers) {
 
     foreach ($browsers as $ua => $browser) {
         $agent->setUserAgent($ua);
-        expect($agent->browser())->toBe($browser);
-        expect($agent->is($browser))->toBeTrue();
+        expect($agent->browser())->toBe($browser)
+            ->and($agent->is($browser))->toBeTrue();
 
         if (! str_contains($browser, ' ')) {
-            $method = "is{$browser}";
+            $method = "is$browser";
             expect($agent->{$method}())->toBeTrue();
         }
     }
@@ -151,8 +151,8 @@ test('robots', function () use ($robots) {
 
     foreach ($robots as $ua => $robot) {
         $agent->setUserAgent($ua);
-        expect($agent->isRobot())->toBeTrue();
-        expect($agent->robot())->toBe($robot);
+        expect($agent->isRobot())->toBeTrue()
+            ->and($agent->robot())->toBe($robot);
     }
 });
 
@@ -173,12 +173,12 @@ test('mobile devices', function () use ($mobileDevices) {
 
     foreach ($mobileDevices as $ua => $device) {
         $agent->setUserAgent($ua);
-        expect($agent->device())->toBe($device);
-        expect($agent->isMobile())->toBeTrue();
-        expect($agent->isDesktop())->toBeFalse();
+        expect($agent->device())->toBe($device)
+            ->and($agent->isMobile())->toBeTrue()
+            ->and($agent->isDesktop())->toBeFalse();
 
         if (! str_contains($device, ' ')) {
-            $method = "is{$device}";
+            $method = "is$device";
             expect($agent->{$method}())->toBeTrue();
         }
     }
@@ -189,12 +189,12 @@ test('desktop devices', function () use ($desktopDevices) {
 
     foreach ($desktopDevices as $ua => $device) {
         $agent->setUserAgent($ua);
-        expect($agent->device())->toBe($device);
-        expect($agent->isMobile())->toBeFalse();
-        expect($agent->isDesktop())->toBeTrue();
+        expect($agent->device())->toBe($device)
+            ->and($agent->isMobile())->toBeFalse()
+            ->and($agent->isDesktop())->toBeTrue();
 
         if (! str_contains($device, ' ')) {
-            $method = "is{$device}";
+            $method = "is$device";
             expect($agent->{$method}())->toBeTrue();
         }
     }
@@ -226,44 +226,44 @@ test('is methods', function () use ($desktops, $phones, $robots, $mobileDevices,
 
     foreach ($desktops as $ua) {
         $agent->setUserAgent($ua);
-        expect($agent->isDesktop())->toBeTrue();
-        expect($agent->isMobile())->toBeFalse();
-        expect($agent->isTablet())->toBeFalse();
-        expect($agent->isPhone())->toBeFalse();
-        expect($agent->isRobot())->toBeFalse();
+        expect($agent->isDesktop())->toBeTrue()
+            ->and($agent->isMobile())->toBeFalse()
+            ->and($agent->isTablet())->toBeFalse()
+            ->and($agent->isPhone())->toBeFalse()
+            ->and($agent->isRobot())->toBeFalse();
     }
 
     foreach ($phones as $ua) {
         $agent->setUserAgent($ua);
-        expect($agent->isPhone())->toBeTrue();
-        expect($agent->isMobile())->toBeTrue();
-        expect($agent->isDesktop())->toBeFalse();
-        expect($agent->isTablet())->toBeFalse();
-        expect($agent->isRobot())->toBeFalse();
+        expect($agent->isPhone())->toBeTrue()
+            ->and($agent->isMobile())->toBeTrue()
+            ->and($agent->isDesktop())->toBeFalse()
+            ->and($agent->isTablet())->toBeFalse()
+            ->and($agent->isRobot())->toBeFalse();
     }
 
     foreach ($robots as $ua => $robot) {
         $agent->setUserAgent($ua);
-        expect($agent->isRobot())->toBeTrue();
-        expect($agent->isDesktop())->toBeFalse();
-        expect($agent->isMobile())->toBeFalse();
-        expect($agent->isTablet())->toBeFalse();
-        expect($agent->isPhone())->toBeFalse();
+        expect($agent->isRobot())->toBeTrue()
+            ->and($agent->isDesktop())->toBeFalse()
+            ->and($agent->isMobile())->toBeFalse()
+            ->and($agent->isTablet())->toBeFalse()
+            ->and($agent->isPhone())->toBeFalse();
     }
 
     foreach ($mobileDevices as $ua => $device) {
         $agent->setUserAgent($ua);
-        expect($agent->isMobile())->toBeTrue();
-        expect($agent->isDesktop())->toBeFalse();
-        expect($agent->isRobot())->toBeFalse();
+        expect($agent->isMobile())->toBeTrue()
+            ->and($agent->isDesktop())->toBeFalse()
+            ->and($agent->isRobot())->toBeFalse();
     }
 
     foreach ($desktopDevices as $ua => $device) {
         $agent->setUserAgent($ua);
-        expect($agent->isDesktop())->toBeTrue();
-        expect($agent->isMobile())->toBeFalse();
-        expect($agent->isTablet())->toBeFalse();
-        expect($agent->isPhone())->toBeFalse();
-        expect($agent->isRobot())->toBeFalse();
+        expect($agent->isDesktop())->toBeTrue()
+            ->and($agent->isMobile())->toBeFalse()
+            ->and($agent->isTablet())->toBeFalse()
+            ->and($agent->isPhone())->toBeFalse()
+            ->and($agent->isRobot())->toBeFalse();
     }
 });
