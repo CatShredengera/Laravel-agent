@@ -1,78 +1,67 @@
-# :package_description
+# Laravel Agent
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
-[![GitHub Tests Action Status](https://github.com/spatie/package-skeleton-laravel/actions/workflows/run-tests.yml/badge.svg)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://github.com/spatie/package-skeleton-laravel/actions/workflows/fix-php-code-style-issues.yml/badge.svg)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
-<!--delete-->
----
-This repo can be used to scaffold a Laravel package. Follow these steps to get started:
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/catshredengera/laravel-agent.svg?style=flat-square)](https://packagist.org/packages/catshredengera/laravel-agent)
+[![GitHub Tests Action Status](https://github.com/catshredengera/laravel-agent/actions/workflows/run-tests.yml/badge.svg)](https://github.com/catshredengera/laravel-agent/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/catshredengera/laravel-agent.svg?style=flat-square)](https://packagist.org/packages/catshredengera/laravel-agent)
 
-1. Press the "Use this template" button at the top of this repo to create a new repo with the contents of this skeleton.
-2. Run "php ./configure.php" to run a script that will replace all placeholders throughout all the files.
+Drop-in replacement for the abandoned [`jenssegers/agent`](https://github.com/jenssegers/agent), updated for Laravel 12/13 and PHP 8.3.
 
-   To run it unattended — from a script, or by handing it to a coding agent — pass `--no-interaction`
-   (`-n`) and the answers as options. It never prompts, and exits non-zero with a message naming any
-   option it still needs:
+`jenssegers/agent` hasn't seen a release since it was archived, and it's pinned to `mobiledetect/mobiledetectlib` v2, which doesn't install on current PHP. This package keeps the exact same `Agent` class, facade and method names — only the Composer package name changes, so migrating is a `composer require`/`composer remove` swap, not a rewrite. Under the hood it runs on [Mobile-Detect v4](https://github.com/serbanghita/Mobile-Detect) and [`jaybizzle/crawler-detect`](https://github.com/JayBizzle/Crawler-Detect), adapted so the v2 → v4 breaking changes never reach your code.
 
-   ```bash
-   php ./configure.php -n --vendor-name="Spatie" --package-name="laravel-ray"
-   ```
+## Migrating from jenssegers/agent
 
-   Run "php ./configure.php --help" for the full list of options.
-3. Have fun creating your package.
-4. If you need help creating a package, consider picking up our <a href="https://laravelpackage.training">Laravel Package Training</a> video course.
----
-<!--/delete-->
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+```bash
+composer remove jenssegers/agent
+composer require catshredengera/laravel-agent
+```
 
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/:package_name.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/:package_name)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+That's it — no code changes. `Agent::isMobile()`, `Agent::browser()`, the `is*()` magic methods, all of it works exactly as before.
 
 ## Installation
 
 You can install the package via composer:
 
 ```bash
-composer require :vendor_slug/:package_slug
+composer require catshredengera/laravel-agent
 ```
 
-You can publish and run the migrations with:
-
-```bash
-php artisan vendor:publish --tag=":package_slug-migrations"
-php artisan migrate
-```
-
-You can publish the config file with:
-
-```bash
-php artisan vendor:publish --tag=":package_slug-config"
-```
-
-This is the contents of the published config file:
-
-```php
-return [
-];
-```
-
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag=":package_slug-views"
-```
+The service provider and `Agent` facade are auto-discovered — nothing to register manually.
 
 ## Usage
 
 ```php
-$:variable = new VendorName\Skeleton();
-echo $:variable->echoPhrase('Hello, VendorName!');
+use CatShredengera\Agent\Facades\Agent;
+
+Agent::isMobile();
+Agent::isTablet();
+Agent::isDesktop();
+Agent::isPhone();
+
+Agent::isRobot();
+Agent::robot(); // Googlebot, Bingbot, ...
+
+Agent::device();    // iPhone, Nexus One, Macintosh, ...
+Agent::platform();  // Windows, AndroidOS, OS X, ...
+Agent::browser();   // Chrome, Safari, IE, ...
+Agent::version('Chrome'); // 79.0.3945.29
+
+Agent::languages(); // ['en-us', 'en']
+
+// Any device / platform / browser name also works as a magic isX() method:
+Agent::isChrome();
+Agent::isWindows();
+Agent::isiPhone();
+```
+
+You can also instantiate `Agent` directly, outside of a Laravel request:
+
+```php
+use CatShredengera\Agent\Agent;
+
+$agent = new Agent();
+$agent->setUserAgent($userAgentString);
+
+$agent->isMobile();
 ```
 
 ## Testing
@@ -81,22 +70,22 @@ echo $:variable->echoPhrase('Hello, VendorName!');
 composer test
 ```
 
+The test suite is ported from `jenssegers/agent`'s own tests: the same set of real-world user-agent strings the original package was validated against.
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
+Issues and pull requests are welcome.
 
 ## Credits
 
-- [:author_name](https://github.com/:author_username)
-- [All Contributors](../../contributors)
+- [jenssegers/agent](https://github.com/jenssegers/agent) — the original package this one keeps alive
+- [Mobile-Detect](https://github.com/serbanghita/Mobile-Detect)
+- [Crawler-Detect](https://github.com/JayBizzle/Crawler-Detect)
+- [CatShredengera](https://github.com/CatShredengera)
 
 ## License
 
