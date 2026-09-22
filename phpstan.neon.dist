@@ -22,10 +22,15 @@ parameters:
             # common case); harmless no-op the rest of the time.
             reportUnmatched: false
         -
-            # Same situation, reversed: `Detection\MobileDetect` is v4.x's
-            # class, unresolvable here whenever a CI job (or a local run)
-            # has v2.x installed instead. ModernDriver is only ever
-            # instantiated when v4.x actually got installed.
-            message: '#Instantiated class Detection\\MobileDetect not found\.#'
+            # Same situation, reversed — but subtler: v2.x *also* ships a
+            # `Detection\MobileDetect` (namespaced/Detection/MobileDetect.php,
+            # a one-line `class MobileDetect extends \Mobile_Detect {}` PSR-0
+            # shim), so when v2.x is installed PHPStan doesn't report a
+            # missing class here — it finds v2's *old*-API class under that
+            # name and flags every v4-only member ModernDriver uses against
+            # it. ModernDriver is only ever instantiated when v4.x actually
+            # got installed (DriverFactory checks `Mobile_Detect` first), so
+            # none of this is reachable when v2.x is what's resolved.
+            message: '#^(Unknown parameter \$config in call to Detection\\MobileDetect constructor\.|Call to an undefined method Detection\\MobileDetect::(autoInitKnownHttpHeaders|hasUserAgent)\(\)\.)$#'
             path: src/Support/ModernDriver.php
             reportUnmatched: false
