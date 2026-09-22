@@ -6,7 +6,9 @@
 
 Drop-in replacement for [`jenssegers/agent`](https://github.com/jenssegers/agent), updated for Laravel 12/13 and PHP 8.3.
 
-`jenssegers/agent` isn't archived, just unmaintained: its last release was v2.6.4 in June 2020, and it's pinned to `mobiledetect/mobiledetectlib` v2, which doesn't install on current PHP. This package keeps the exact same `Agent` class, facade and method names — only the Composer package name changes, so migrating is a `composer require`/`composer remove` swap, not a rewrite. Under the hood it runs on [Mobile-Detect v4](https://github.com/serbanghita/Mobile-Detect) and [`jaybizzle/crawler-detect`](https://github.com/JayBizzle/Crawler-Detect), adapted so the v2 → v4 breaking changes never reach your code.
+`jenssegers/agent` isn't archived, just unmaintained: its last release was v2.6.4 in June 2020, pinned to `mobiledetect/mobiledetectlib:^2.7.6` — a constraint composer can no longer resolve to anything with current PHP-compatibility patches. This package keeps the exact same `Agent` class, facade and method names — only the Composer package name changes, so migrating is a `composer require`/`composer remove` swap, not a rewrite.
+
+Under the hood it supports **both** major lines of `mobiledetect/mobiledetectlib`: the actively-developed v4.x (`Detection\MobileDetect`, a reworked API), and the still-patched v2.x (the global `Mobile_Detect` class jenssegers/agent itself depended on). Agent detects whichever one composer actually resolved and adapts to it, so it works whether your project pulls in the latest Mobile-Detect or something else in your dependency tree pins the legacy line.
 
 ## Migrating from jenssegers/agent
 
@@ -39,6 +41,8 @@ composer require catshredengera/laravel-agent
 ```
 
 The service provider and `Agent` facade are auto-discovered — nothing to register manually.
+
+`composer.json` requires `mobiledetect/mobiledetectlib:^2.8.34||^4.0`, so whichever one composer resolves — the latest v4.x by default, or v2.x if something else in your project pins it — just works.
 
 ## Usage
 

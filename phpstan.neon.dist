@@ -6,3 +6,26 @@ parameters:
     paths:
         - src
     tmpDir: build/phpstan
+    ignoreErrors:
+        -
+            # `Mobile_Detect` is mobiledetect/mobiledetectlib v2.x's class —
+            # composer.json allows `^2.8.34 || ^4.0`, and whichever one is
+            # NOT installed is, correctly, unresolvable here. This file is
+            # only ever instantiated (via DriverFactory) when v2.x is what
+            # actually got installed; verified against the real package by
+            # temporarily requiring each range and running the full test
+            # suite against both. See Support/ModernDriver.php for the same
+            # situation in reverse.
+            message: '#Instantiated class Mobile_Detect not found\.#'
+            path: src/Support/LegacyDriver.php
+            # Only ever fires when v4.x is what's actually installed (the
+            # common case); harmless no-op the rest of the time.
+            reportUnmatched: false
+        -
+            # Same situation, reversed: `Detection\MobileDetect` is v4.x's
+            # class, unresolvable here whenever a CI job (or a local run)
+            # has v2.x installed instead. ModernDriver is only ever
+            # instantiated when v4.x actually got installed.
+            message: '#Instantiated class Detection\\MobileDetect not found\.#'
+            path: src/Support/ModernDriver.php
+            reportUnmatched: false

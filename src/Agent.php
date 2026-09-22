@@ -2,16 +2,22 @@
 
 namespace CatShredengera\Agent;
 
-use Detection\MobileDetect;
+use BadMethodCallException;
+use CatShredengera\Agent\Support\Driver;
+use CatShredengera\Agent\Support\DriverFactory;
 use Jaybizzle\CrawlerDetect\CrawlerDetect;
 
 /**
- * Adapts Mobile-Detect v4's `Detection\MobileDetect` (which reworked the
- * constructor, dropped `Mobile_Detect`'s legacy method names and removed the
- * mobile/extended detection-type split) back to the public API of
- * jenssegers/agent's `Agent`, so calling code doesn't need to change.
+ * Reproduces jenssegers/agent's public `Agent` API on top of whichever
+ * generation of mobiledetect/mobiledetectlib is actually installed:
+ * v2.x's `Mobile_Detect` (what jenssegers/agent itself depended on, still
+ * patched today) or v4.x's reworked `Detection\MobileDetect`. See
+ * Support\Driver, Support\LegacyDriver and Support\ModernDriver — this
+ * class holds a Driver instead of extending either underlying class
+ * directly, since which one is even loadable depends on which got
+ * installed (composer.json allows `^2.7 || ^4.0`).
  */
-class Agent extends MobileDetect
+class Agent
 {
     /**
      * List of desktop devices.
@@ -77,7 +83,66 @@ class Agent extends MobileDetect
         'Coc Coc' => 'coc_coc_browser/[VER]',
     ];
 
+    /**
+     * The placeholder `version()` substitutes with a version-number regex.
+     * Stable across every mobiledetect/mobiledetectlib generation (it's
+     * `self::VER`/`VERSION_REGEX` there) — hardcoded here so version()
+     * doesn't need driver-specific branching too.
+     */
+    protected const VER = '([\w._\+]+)';
+
     protected static ?CrawlerDetect $crawlerDetect = null;
+
+    protected Driver $driver;
+
+    /**
+     * @param  array|null  $httpHeaders  PHP-flavored HTTP headers (e.g. Laravel's `$request->server()`).
+     *                                   Pass null to auto-detect from PHP's superglobals, like `new Agent()` did.
+     */
+    public function __construct(?array $httpHeaders = null, ?string $userAgent = null)
+    {
+        $this->driver = DriverFactory::make($httpHeaders, $userAgent);
+    }
+
+    public function __call(string $name, array $arguments): bool
+    {
+        if (! str_starts_with($name, 'is')) {
+            throw new BadMethodCallException("No such method exists: $name");
+        }
+
+        return $this->is(substr($name, 2));
+    }
+
+    public function setUserAgent(?string $userAgent): void
+    {
+        $this->driver->setUserAgent($userAgent);
+    }
+
+    public function getUserAgent(): ?string
+    {
+        return $this->driver->getUserAgent();
+    }
+
+    public function setHttpHeaders(array $httpHeaders): void
+    {
+        $this->driver->setHttpHeaders($httpHeaders);
+    }
+
+    public function getHttpHeader(string $header): ?string
+    {
+        return $this->driver->getHttpHeader($header);
+    }
+
+    /**
+     * Some detection rules are relative (not standard), because of the
+     * diversity of devices, vendors and their conventions in representing
+     * the User-Agent or the HTTP headers. This method checks a custom
+     * regex against the User-Agent string.
+     */
+    public function match(string $regex, ?string $userAgent = null): bool
+    {
+        return $this->driver->match($regex, $userAgent);
+    }
 
     /**
      * Merge multiple rule arrays into one, combining regexes for keys that
@@ -109,55 +174,23 @@ class Agent extends MobileDetect
     }
 
     /**
-     * @param  array|null  $httpHeaders  PHP-flavored HTTP headers (e.g. Laravel's `$request->server()`).
-     *                                   Pass null to auto-detect from PHP's superglobals, like `new Agent()` did.
-     */
-    public function __construct(?array $httpHeaders = null, ?string $userAgent = null)
-    {
-        parent::__construct(config: ['autoInitOfHttpHeaders' => false]);
-
-        if ($httpHeaders !== null) {
-            // Callers (e.g. our service provider) pass the full, unfiltered
-            // $request->server() / $_SERVER array, which under CLI/testing
-            // contexts can contain non-scalar entries such as 'argv'. Those
-            // aren't real HTTP headers, and Mobile-Detect's cache-key
-            // builder blows up (`Array to string conversion`) if it sees one.
-            $this->setHttpHeaders(array_filter($httpHeaders, 'is_scalar'));
-        } else {
-            $this->autoInitKnownHttpHeaders();
-        }
-
-        if ($userAgent !== null) {
-            $this->setUserAgent($userAgent);
-        }
-
-        if (! $this->hasUserAgent()) {
-            $this->setUserAgent('');
-        }
-    }
-
-    /**
      * Get all detection rules used by named/magic `is*()` checks: the
      * standard mobile/tablet/OS/browser rules plus Agent's own desktop and
      * "additional" OS/browser rules.
      */
     public static function getDetectionRulesExtended(): array
     {
-        static $rules;
+        $driver = DriverFactory::driverClass();
 
-        if (! $rules) {
-            $rules = static::mergeRules(
-                static::$desktopDevices,
-                static::$phoneDevices,
-                static::$tabletDevices,
-                static::$operatingSystems,
-                static::$additionalOperatingSystems,
-                static::$browsers,
-                static::$additionalBrowsers
-            );
-        }
-
-        return $rules;
+        return static::mergeRules(
+            static::$desktopDevices,
+            $driver::phoneDevices(),
+            $driver::tabletDevices(),
+            $driver::operatingSystems(),
+            static::$additionalOperatingSystems,
+            $driver::browsers(),
+            static::$additionalBrowsers
+        );
     }
 
     public function getCrawlerDetect(): CrawlerDetect
@@ -171,26 +204,27 @@ class Agent extends MobileDetect
 
     public static function getBrowsers(): array
     {
+        $driver = DriverFactory::driverClass();
+
         return static::mergeRules(
             static::$additionalBrowsers,
-            static::$browsers
+            $driver::browsers()
         );
     }
 
     public static function getOperatingSystems(): array
     {
+        $driver = DriverFactory::driverClass();
+
         return static::mergeRules(
-            static::$operatingSystems,
+            $driver::operatingSystems(),
             static::$additionalOperatingSystems
         );
     }
 
     public static function getPlatforms(): array
     {
-        return static::mergeRules(
-            static::$operatingSystems,
-            static::$additionalOperatingSystems
-        );
+        return static::getOperatingSystems();
     }
 
     public static function getDesktopDevices(): array
@@ -200,9 +234,11 @@ class Agent extends MobileDetect
 
     public static function getProperties(): array
     {
+        $driver = DriverFactory::driverClass();
+
         return static::mergeRules(
             static::$additionalProperties,
-            static::$properties
+            $driver::properties()
         );
     }
 
@@ -255,7 +291,9 @@ class Agent extends MobileDetect
 
             // Check match
             if ($this->match($regex, $userAgent)) {
-                return $key !== '' ? $key : (reset($this->matchesArray) ?: false);
+                $matches = $this->driver->getMatches();
+
+                return $key !== '' ? $key : (reset($matches) ?: false);
             }
         }
 
@@ -283,31 +321,23 @@ class Agent extends MobileDetect
      */
     public function device(?string $userAgent = null): string|bool
     {
+        $driver = DriverFactory::driverClass();
+
         $rules = static::mergeRules(
             static::getDesktopDevices(),
-            static::getPhoneDevices(),
-            static::getTabletDevices()
+            $driver::phoneDevices(),
+            $driver::tabletDevices()
         );
 
         return $this->findDetectionRulesAgainstUA($rules, $userAgent);
     }
 
     /**
-     * Check if the device is mobile. Kept accepting the (deprecated)
-     * `$userAgent`/`$httpHeaders` overrides jenssegers/agent exposed, even
-     * though Mobile-Detect v4's `isMobile()` no longer takes them itself.
+     * Check if the device is mobile.
      */
     public function isMobile(?string $userAgent = null, ?array $httpHeaders = null): bool
     {
-        if ($httpHeaders !== null) {
-            $this->setHttpHeaders($httpHeaders);
-        }
-
-        if ($userAgent !== null) {
-            $this->setUserAgent($userAgent);
-        }
-
-        return $this->hasUserAgent() && parent::isMobile();
+        return $this->driver->isMobile($userAgent, $httpHeaders);
     }
 
     /**
@@ -315,15 +345,7 @@ class Agent extends MobileDetect
      */
     public function isTablet(?string $userAgent = null, ?array $httpHeaders = null): bool
     {
-        if ($httpHeaders !== null) {
-            $this->setHttpHeaders($httpHeaders);
-        }
-
-        if ($userAgent !== null) {
-            $this->setUserAgent($userAgent);
-        }
-
-        return $this->hasUserAgent() && parent::isTablet();
+        return $this->driver->isTablet($userAgent, $httpHeaders);
     }
 
     /**
@@ -397,6 +419,57 @@ class Agent extends MobileDetect
     }
 
     /**
+     * Get the version of the given browser/platform property.
+     */
+    public function version(string $propertyName, string $type = 'text'): float|bool|string
+    {
+        if (empty($propertyName)) {
+            return false;
+        }
+
+        if ($type !== 'text' && $type !== 'float') {
+            $type = 'text';
+        }
+
+        $properties = static::getProperties();
+
+        if (! isset($properties[$propertyName])) {
+            return false;
+        }
+
+        foreach ((array) $properties[$propertyName] as $propertyMatchString) {
+            if (is_array($propertyMatchString)) {
+                $propertyMatchString = implode('|', $propertyMatchString);
+            }
+
+            $propertyPattern = str_replace('[VER]', static::VER, $propertyMatchString);
+
+            preg_match(sprintf('#%s#is', $propertyPattern), (string) $this->getUserAgent(), $match);
+
+            if (! empty($match[1])) {
+                return $type === 'float' ? $this->prepareVersionNo($match[1]) : $match[1];
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Prepare the version number, e.g. "2_0" -> 2.0, "4.3.1" -> 4.31.
+     */
+    protected function prepareVersionNo(string $ver): float
+    {
+        $ver = str_replace(['_', ' ', '/'], '.', $ver);
+        $parts = explode('.', $ver, 2);
+
+        if (isset($parts[1])) {
+            $parts[1] = str_replace('.', '', $parts[1]);
+        }
+
+        return (float) implode('.', $parts);
+    }
+
+    /**
      * Checks if a rule (e.g. `Windows`, `iPhone`, `IE`) matches its regex
      * against the User-Agent, searching Agent's extended rule set (the
      * standard rules plus desktop devices and additional OS/browsers) —
@@ -405,7 +478,8 @@ class Agent extends MobileDetect
      */
     public function is(string $ruleName): bool
     {
-        if (! $this->hasUserAgent() || $this->isUserAgentEmpty()) {
+        $userAgent = $this->getUserAgent();
+        if (! $userAgent) {
             return false;
         }
 
@@ -421,6 +495,6 @@ class Agent extends MobileDetect
             $regex = implode('|', $regex);
         }
 
-        return $this->match($regex, (string) $this->getUserAgent());
+        return $this->match($regex, $userAgent);
     }
 }

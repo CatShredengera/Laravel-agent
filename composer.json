@@ -26,7 +26,7 @@
         "illuminate/contracts": "^11.0||^12.0||^13.0",
         "illuminate/support": "^11.0||^12.0||^13.0",
         "jaybizzle/crawler-detect": "^1.2",
-        "mobiledetect/mobiledetectlib": "^4.0"
+        "mobiledetect/mobiledetectlib": "^2.8.34||^4.0"
     },
     "require-dev": {
         "laravel/pint": "^1.14",
@@ -51,7 +51,7 @@
         }
     },
     "scripts": {
-        "analyse": "vendor/bin/phpstan analyse",
+        "analyse": "vendor/bin/phpstan analyse --memory-limit=512M",
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
         "format": "vendor/bin/pint"
