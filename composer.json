@@ -10,7 +10,7 @@
         "platform",
         "mobile",
         "desktop",
-        "jenssegers/agent"
+        "jenssegers"
     ],
     "homepage": "https://github.com/catshredengera/laravel-agent",
     "license": "MIT",
