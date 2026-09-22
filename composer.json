@@ -1,6 +1,6 @@
 {
     "name": "catshredengera/laravel-agent",
-    "description": "Drop-in replacement for the abandoned jenssegers/agent, updated for Laravel 12/13 and PHP 8.3",
+    "description": "Drop-in replacement for the unmaintained jenssegers/agent — same Agent API, on modern Mobile-Detect (v4 and v2)",
     "keywords": [
         "laravel",
         "useragent",
@@ -10,6 +10,8 @@
         "platform",
         "mobile",
         "desktop",
+        "mobile-detect",
+        "crawler",
         "jenssegers"
     ],
     "homepage": "https://github.com/catshredengera/laravel-agent",
@@ -17,7 +19,6 @@
     "authors": [
         {
             "name": "CatShredengera",
-            "email": "46873856+CatShredengera@users.noreply.github.com",
             "role": "Developer"
         }
     ],
